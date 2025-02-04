@@ -4,9 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock & Finance Manager</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --primary: #2962ff;
+            --danger: #ff1744;
+            --success: #00c853;
+            --background: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: var(--background);
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        h2 {
+            color: var(--primary);
+            margin: 0 0 1.5rem 0;
+            font-size: 1.5rem;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .entry {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .delete-btn {
+            background: var(--danger);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            margin-left: 1rem;
+        }
+        .summary-card {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, var(--primary), #304ffe);
+            color: white;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            text-align: center;
+        }
+        .summary-item {
+            padding: 1.5rem;
+        }
+        .summary-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+    </style>
 </head>
-<body onload="initialize()">
+<body>
     <div class="container">
         <div class="card">
             <h2>📦 Add Inventory</h2>
@@ -14,7 +103,7 @@
                 <input type="text" id="itemName" placeholder="Item name">
                 <input type="number" id="itemQuantity" placeholder="Quantity">
                 <input type="number" id="itemPrice" placeholder="Cost price">
-                <button onclick="addItem()">Add Stock</button>
+                <button id="addItemBtn">Add Stock</button>
             </div>
             <div id="inventoryList"></div>
         </div>
@@ -25,7 +114,7 @@
                 <select id="saleItem"></select>
                 <input type="number" id="saleQuantity" placeholder="Quantity">
                 <input type="number" id="salePrice" placeholder="Sale price">
-                <button onclick="recordSale()">Complete Sale</button>
+                <button id="recordSaleBtn">Complete Sale</button>
             </div>
             <div id="salesList"></div>
         </div>
@@ -35,7 +124,7 @@
             <div class="input-group">
                 <input type="text" id="expenseDesc" placeholder="Description">
                 <input type="number" id="expenseAmount" placeholder="Amount">
-                <button onclick="addExpense()">Add Expense</button>
+                <button id="addExpenseBtn">Add Expense</button>
             </div>
             <div id="expensesList"></div>
         </div>
@@ -56,6 +145,53 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+            let sales = JSON.parse(localStorage.getItem('sales')) || [];
+            let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+
+            function saveData() {
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+                localStorage.setItem('sales', JSON.stringify(sales));
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+            }
+
+            function renderInventory() {
+                const list = document.getElementById('inventoryList');
+                list.innerHTML = inventory.map((item, index) => `
+                    <div class="entry">
+                        <div><strong>${item.name}</strong> - ${item.quantity} pcs @ ₹${item.price.toFixed(2)}</div>
+                        <button class="delete-btn" onclick="deleteInventoryItem(${index})">Delete</button>
+                    </div>
+                `).join('');
+            }
+
+            function addItem() {
+                const name = document.getElementById('itemName').value.trim();
+                const quantity = parseInt(document.getElementById('itemQuantity').value);
+                const price = parseFloat(document.getElementById('itemPrice').value);
+
+                if (!name || isNaN(quantity) || isNaN(price)) {
+                    alert("Please enter valid inventory details.");
+                    return;
+                }
+
+                inventory.push({ name, quantity, price });
+                saveData();
+                renderInventory();
+            }
+
+            function deleteInventoryItem(index) {
+                inventory.splice(index, 1);
+                saveData();
+                renderInventory();
+            }
+
+            document.getElementById('addItemBtn').addEventListener('click', addItem);
+
+            renderInventory();
+        });
+    </script>
 </body>
 </html>
