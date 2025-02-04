@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock & Finance Manager</title>
+    <style>
+        /* Modern UI Styles */
+        :root {
+            --primary: #2962ff;
+            --danger: #ff1744;
+            --success: #00c853;
+            --background: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: var(--background);
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        h2 {
+            color: var(--primary);
+            margin: 0 0 1.5rem 0;
+            font-size: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .entry {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delete-btn {
+            background: var(--danger);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            margin-left: 1rem;
+        }
+
+        .summary-card {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, var(--primary), #304ffe);
+            color: white;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            text-align: center;
+        }
+
+        .summary-item {
+            padding: 1.5rem;
+        }
+
+        .summary-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Inventory Section -->
+        <div class="card">
+            <h2>📦 Add Inventory</h2>
+            <div class="input-group"><input type="text" id="itemName" placeholder="Item name">&nbsp;<input type="number" id="itemQuantity" placeholder="Quantity">&nbsp;<input type="number" id="itemPrice" placeholder="Cost price"> <button>Add Stock</button></div>
+            <div id="inventoryList"><br></div>
+        </div><!-- Sales Section -->
+        <div class="card">
+            <h2>💰 Record Sale</h2>
+            <div class="input-group"> <input type="number" id="saleQuantity" placeholder="Quantity">&nbsp;<input type="number" id="salePrice" placeholder="Sale price"> <button>******** Sale</button></div>
+            <div id="salesList"><br></div>
+        </div><!-- Expenses Section -->
+        <div class="card">
+            <h2>📉 Track Expenses</h2>
+            <div class="input-group"><input type="text" id="expenseDesc" placeholder="Description">&nbsp;<input type="number" id="expenseAmount" placeholder="Amount"> <button>Add Expense</button></div>
+            <div id="expensesList"><br></div>
+        </div><!-- Financial Summary -->
+        <div class="card summary-card">
+            <div class="summary-item">
+                <div>***** Capital</div>
+                <div class="summary-number" id="totalCapital">₹0.00</div>
+            </div>
+            <div class="summary-item">
+                <div>Total Profit</div>
+                <div class="summary-number" id="totalProfit">₹0.00</div>
+            </div>
+            <div class="summary-item">
+                <div>Total Expenses</div>
+                <div class="summary-number" id="totalExpenses">₹0.00</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Data initialization
+        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+        let sales = JSON.parse(localStorage.getItem('sales')) || [];
+        let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        
+        // Initialize UI
+        function initialize() {
+            updateItemDropdown();
+            renderAll();
+            updateSummary();
+        }
+        
+        // Render all lists
+        function renderAll() {
+            renderInventory();
+            renderSales();
+            renderExpenses();
+        }
+        
+        // Inventory functions
+        function addItem() {
+            const item = {
+                name: document.getElementById('itemName').value,
+                quantity: parseInt(document.getElementById('itemQuantity').value),
+                price: parseFloat(document.getElementById('itemPrice').value)
+            };
+            
+            if (!item.name || isNaN(item.quantity) || isNaN(item.price)) {
+                alert("Please fill all inventory fields!");
+                return;
+            }
+        
+            inventory.push(item);
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            clearInputs(['itemName', 'itemQuantity', 'itemPrice']);
+            initialize();
+        }
+        
+        function deleteInventoryItem(index) {
+            if (confirm("Delete this inventory item?")) {
+                inventory.splice(index, 1);
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+                initialize();
+            }
+        }
+        
+        // Sales functions
+        function recordSale() {
+            const itemName = document.getElementById('saleItem').value;
+            const quantity = parseInt(document.getElementById('saleQuantity').value);
+            const price = parseFloat(document.getElementById('salePrice').value);
+        
+            const item = inventory.find(i => i.name === itemName);
+            if (!item || isNaN(quantity) || isNaN(price)) {
+                alert("Invalid sale details!");
+                return;
+            }
+        
+            if (item.quantity >= quantity) {
+                item.quantity -= quantity;
+                sales.push({
+                    item: itemName,
+                    quantity: quantity,
+                    price: price,
+                    profit: (price - item.price) * quantity,
+                    date: new Date().toLocaleString()
+                });
+                
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+                localStorage.setItem('sales', JSON.stringify(sales));
+                clearInputs(['saleQuantity', 'salePrice']);
+                initialize();
+            } else {
+                alert("Not enough stock!");
+            }
+        }
+        
+        function deleteSale(index) {
+            if (confirm("Delete this sale record?")) {
+                const sale = sales[index];
+                const item = inventory.find(i => i.name === sale.item);
+                if (item) item.quantity += sale.quantity;
+                
+                sales.splice(index, 1);
+                localStorage.setItem('sales', JSON.stringify(sales));
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+                initialize();
+            }
+        }
+        
+        // Expense functions
+        function addExpense() {
+            const expense = {
+                desc: document.getElementById('expenseDesc').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                date: new Date().toLocaleString()
+            };
+        
+            if (!expense.desc || isNaN(expense.amount)) {
+                alert("Please fill expense details!");
+                return;
+            }
+        
+            expenses.push(expense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            clearInputs(['expenseDesc', 'expenseAmount']);
+            initialize();
+        }
+        
+        function deleteExpense(index) {
+            if (confirm("Delete this expense?")) {
+                expenses.splice(index, 1);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+                initialize();
+            }
+        }
+        
+        // Helper functions
+        function updateItemDropdown() {
+            const dropdown = document.getElementById('saleItem');
+            dropdown.innerHTML = inventory.map(item => 
+                `<option value="${item.name}">${item.name} (${item.quantity} available)</option>`
+            ).join('');
+        }
+        
+        function renderInventory() {
+            const list = document.getElementById('inventoryList');
+            list.innerHTML = inventory.map((item, index) => `
+                <div class="entry">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small>Stock: ${item.quantity} | Cost: ₹${item.price.toFixed(2)}</small>
+                    </div>
+                    <button class="delete-btn" onclick="deleteInventoryItem(${index})">Delete</button>
+                </div>
+            `).join('');
+        }
+        
+        function renderSales() {
+            const list = document.getElementById('salesList');
+            list.innerHTML = sales.map((sale, index) => `
+                <div class="entry">
+                    <div>
+                        <strong>${sale.item}</strong><br>
+                        <small>${sale.quantity} sold @ ₹${sale.price.toFixed(2)} (Profit: ₹${sale.profit.toFixed(2)})</small>
+                    </div>
+                    <button class="delete-btn" onclick="deleteSale(${index})">Delete</button>
+                </div>
+            `).join('');
+        }
+        
+        function renderExpenses() {
+            const list = document.getElementById('expensesList');
+            list.innerHTML = expenses.map((expense, index) => `
+                <div class="entry">
+                    <div>
+                        <strong>${expense.desc}</strong><br>
+                        <small>₹${expense.amount.toFixed(2)} on ${expense.date}</small>
+                    </div>
+                    <button class="delete-btn" onclick="deleteExpense(${index})">Delete</button>
+                </div>
+            `).join('');
+        }
+        
+        function updateSummary() {
+            const totalInventoryValue = inventory.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const totalSalesProfit = sales.reduce((sum, sale) => sum + sale.profit, 0);
+            const totalExpensesAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+            const totalCapital = totalInventoryValue + totalSalesProfit - totalExpensesAmount;
+        
+            document.getElementById('totalCapital').textContent = `₹${totalCapital.toFixed(2)}`;
+            document.getElementById('totalProfit').textContent = `₹${totalSalesProfit.toFixed(2)}`;
+            document.getElementById('totalExpenses').textContent = `₹${totalExpensesAmount.toFixed(2)}`;
+        }
+        
+        function clearInputs(ids) {
+            ids.forEach(id => document.getElementById(id).value = '');
+        }
+        
+        // Initial load
+        initialize();
+    </script>
+
+<div style="color: red">Word to HTML trial - please <a href="https://wordtohtml.net/site/payment">Go PRO</a> to get whole HTML.</div>
+</body>
+
+</html>
